@@ -39,7 +39,7 @@ namespace CubeController
         private GpioPinValue High = GpioPinValue.High;
         private GpioPinValue Low = GpioPinValue.Low;
 
-        private int BAM_Bit = 0, BAM_Counter = 0, level = 0;
+        private int BAM_Bit = 0, BAM_Counter = 0, level = 0, anodelevel = 0;
         public MainPage()
         {
             this.InitializeComponent();
@@ -120,7 +120,7 @@ namespace CubeController
 
         private void loadCube(object sender, object e)
         {
-            byte[] output;
+            byte[] output = { };
             TogglePin.Write(High);
             if (BAM_Counter == 8) BAM_Bit++;
             if (BAM_Counter == 24) BAM_Bit++;
@@ -130,9 +130,41 @@ namespace CubeController
             switch (BAM_Bit)
             {
                 case 0:
-                    for (var shift_out = level; shift_out < level + 8; shift_out++) SpiCube.Write(red0[shift_out]);
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out] = red0[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 8] = gre0[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 16] = blu0[shift_out];
+                    break;
+                case 1:
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out] = red1[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 8] = gre1[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 16] = blu1[shift_out];
+                    break;
+                case 2:
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out] = red2[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 8] = gre2[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 16] = blu2[shift_out];
+                    break;
+                case 3:
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out] = red3[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 8] = gre3[shift_out];
+                    for (var shift_out = level; shift_out < level + 8; shift_out++) output[shift_out + 16] = blu3[shift_out];
+                    if (BAM_Counter == 120)
+                    {
+                        BAM_Counter = 0;
+                        BAM_Bit = 0;
+                    }
                     break;
             }
+            output[24] = anode[anodelevel];
+
+            SpiCube.Write(output);
+            LatchPin.Write(High);
+            LatchPin.Write(Low);
+            TogglePin.Write(Low);
+            anodelevel++;
+            level += 8;
+            if (anodelevel == 8) anodelevel = 0;
+            if (level == 64) level = 0;
         }
     }
 }
