@@ -17,13 +17,8 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.Spi;
 using Windows.Devices.Gpio;
 
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
-
 namespace CubeController
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainPage : Page
     {
         private SpiDevice SpiCube;
@@ -91,18 +86,14 @@ namespace CubeController
 
         private void InitGpio()
         {
-            IoController = GpioController.GetDefault(); /* Get the default GPIO controller on the system */
+            IoController = GpioController.GetDefault();
             if (IoController == null)
             {
                 throw new Exception("GPIO does not exist on the current system.");
             }
-
-            /* Initialize a pin as output for the Data/Command line on the display  */
             LatchPin = IoController.OpenPin(23);
             LatchPin.Write(GpioPinValue.Low);
             LatchPin.SetDriveMode(GpioPinDriveMode.Output);
-
-            /* Initialize a pin as output for the hardware Reset line on the display */
             TogglePin = IoController.OpenPin(24);
             TogglePin.Write(GpioPinValue.High);
             TogglePin.SetDriveMode(GpioPinDriveMode.Output);
@@ -111,7 +102,6 @@ namespace CubeController
 
         private void MainPage_Unloaded(object sender, object args)
         {
-            /* Cleanup */
             CubeController.Stop();
             SpiCube.Dispose();
             TogglePin.Dispose();
@@ -165,6 +155,49 @@ namespace CubeController
             level += 8;
             if (anodelevel == 8) anodelevel = 0;
             if (level == 64) level = 0;
+        }
+
+        private void LED(int level, int row, int column, byte red, byte green, byte blue)
+        {
+            if(level<0)level=0;if(level>7)level=7;if(row<0)row=0;if(row>7)row=7;if(column<0)column=0;if(column>7)column=7;if(red<0)red=0;if(red>15)red=15;if(green<0)green=0;if(green>15)green=15;if(blue<0)blue=0;if(blue>15)blue=15;
+            int whichbyte = ((level * 64) + (row * 8) + column) / 8;
+            int wholebyte = (level * 64) + (row * 8) + column;
+            int bitpos = wholebyte - (8 * whichbyte);
+            red0[whichbyte] = bitWrite(red0[whichbyte], wholebyte - (8 * whichbyte), bitRead(red, 3));
+            red1[whichbyte] = bitWrite(red1[whichbyte], wholebyte - (8 * whichbyte), bitRead(red, 2));
+            red2[whichbyte] = bitWrite(red2[whichbyte], wholebyte - (8 * whichbyte), bitRead(red, 1));
+            red3[whichbyte] = bitWrite(red3[whichbyte], wholebyte - (8 * whichbyte), bitRead(red, 0));
+            gre0[whichbyte] = bitWrite(gre0[whichbyte], wholebyte - (8 * whichbyte), bitRead(green, 3));
+            gre1[whichbyte] = bitWrite(gre1[whichbyte], wholebyte - (8 * whichbyte), bitRead(green, 2));
+            gre2[whichbyte] = bitWrite(gre2[whichbyte], wholebyte - (8 * whichbyte), bitRead(green, 1));
+            gre3[whichbyte] = bitWrite(gre3[whichbyte], wholebyte - (8 * whichbyte), bitRead(green, 0));
+            blu0[whichbyte] = bitWrite(blu0[whichbyte], wholebyte - (8 * whichbyte), bitRead(blue, 3));
+            blu1[whichbyte] = bitWrite(blu1[whichbyte], wholebyte - (8 * whichbyte), bitRead(blue, 2));
+            blu2[whichbyte] = bitWrite(blu2[whichbyte], wholebyte - (8 * whichbyte), bitRead(blue, 1));
+            blu3[whichbyte] = bitWrite(blu3[whichbyte], wholebyte - (8 * whichbyte), bitRead(blue, 0));
+        }
+
+        private byte bitWrite(byte var, int where, char what)
+        {
+            string output = "";
+            string input = Convert.ToString(var, 2);
+            for (int i = 0; i < 8; i++)
+            {
+                if(i != where)
+                {
+                    output += input[i];
+                }
+                else
+                {
+                    output += what;
+                }
+            }
+            return Convert.ToByte(output, 2);
+        }
+
+        private char bitRead(byte var, int where)
+        {
+            return Convert.ToString(var, 2)[where];
         }
     }
 }
